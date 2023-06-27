@@ -1,10 +1,11 @@
-<?php
-
-namespace App\View\Components\Tables;
+<?php namespace App\View\Components\Tables;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\Component;
 
+/**
+ * Описывает логику работы laravel компонента таблиц
+ */
 class Table extends Component
 {
     /**
@@ -38,6 +39,16 @@ class Table extends Component
      */
     public string $paginationLimits;
     /**
+     * Текущий лимит данных для страницы
+     * @var string
+     */
+    public string $currentPageLimit;
+    /**
+     * Номер страницы данных для отображения
+     * @var string
+     */
+    public string $currentPage;
+    /**
      * Первичные данные для отображения
      * @var \Illuminate\Support\Collection
      */
@@ -58,61 +69,81 @@ class Table extends Component
      *
      * @return void
      */
-    public function __construct($tableName, $dbTableName, $hiddenColumns,$columnsLabels,$paginationLimits)
-    {
+    public function __construct(
+        $tableName,
+        $dbTableName,
+        $hiddenColumns,
+        $columnsLabels,
+        $paginationLimits,
+        $currentPageLimit,
+        $currentPage
+    ) {
         $this->tableName = $tableName;
         $this->dbTableName = $dbTableName;
         $this->hiddenColumns = $hiddenColumns;
         $this->columnsLabels = $columnsLabels;
         $this->paginationLimits = $paginationLimits;
+        $this->currentPageLimit = $currentPageLimit;
+        $this->currentPage = $currentPage;
         /**
          * Получаем список нужных пользователю колонок
          */
-        $get_columns=[];
-        if($hiddenColumns==""){
-            $db_columns = DB::select('SHOW COLUMNS FROM '. $dbTableName);
-            $get_columns = array_map(function($db_column) {
+        $get_columns = [];
+        if ($hiddenColumns == "") {
+            $db_columns = DB::select('SHOW COLUMNS FROM ' . $dbTableName);
+            $get_columns = array_map(function ($db_column) {
                 return $db_column->Field;
             }, $db_columns);
         } else {
-            $hiddenColumns=explode(",",$hiddenColumns);
-            $db_columns = DB::select('SHOW COLUMNS FROM '. $dbTableName);
-            $fields_list = array_map(function($db_column) {
+            $hiddenColumns = explode(",", $hiddenColumns);
+            $db_columns = DB::select('SHOW COLUMNS FROM ' . $dbTableName);
+            $fields_list = array_map(function ($db_column) {
                 return $db_column->Field;
             }, $db_columns);
             /**
              * список нужных полей на английском
              */
-            $i=0;
-            foreach ($fields_list as $db_column){
-                if(in_array($db_column,$hiddenColumns)){
+            $i = 0;
+            foreach ($fields_list as $db_column) {
+                if (in_array($db_column, $hiddenColumns)) {
                     unset($fields_list[$i]);
                     $i++;
                 } else {
                     $i++;
                 }
             }
-            $get_columns=$fields_list;
+            $get_columns = $fields_list;
         }
 
         /**
          * Список нужных пользователю полей с привязанными лейблами
          */
-        $columnsInRussian=explode(",",$this->columnsLabels);
+        $columnsInRussian = explode(",", $this->columnsLabels);
 
         /**
-         * Получаем лимиты пагинации и по ним получаем данные
+         * Получаем текущую пагинацию и по ним получаем данные
          */
-        $pagination_limits_array=explode(',',$this->paginationLimits);
-        //dd($pagination_limits_array);
-        $this->paginationLimitsArray=$pagination_limits_array;
+        $pagination_limits_array = explode(',', $this->paginationLimits);
+        $this->paginationLimitsArray = $pagination_limits_array;
 
-        $this->initialData=DB::table("$dbTableName")->select($get_columns)->get();
-//        dd($this->initialData);
-//        dd($get_columns);
-        $this->finalColumns=$columnsInRussian;
+//        $this->initialData=DB::table("$dbTableName")->select($get_columns)->get();
 
+//        $this->initialData=DB::table("$dbTableName")->select($get_columns)->paginate(
+//            $perPage = $first_page_limit, $columns = $get_columns, $pageName = $this->tableName , $page=3
+//        );
 
+        $paginator = DB::table("$dbTableName")->select($get_columns)->paginate(
+            $perPage = $currentPageLimit,
+            $columns = $get_columns,
+            $pageName = $this->tableName,
+            $page = $this->currentPage
+        );
+        $this->initialData = $paginator->items();
+
+        /**
+         * Колонки на русском
+         */
+        $this->finalColumns = $columnsInRussian;
     }
 
     /**
@@ -124,8 +155,8 @@ class Table extends Component
     {
         return view('components.tables.table', [
             'initialData' => $this->initialData,
-            'finalColumns'=>$this->finalColumns,
-            'paginationLimitsArray'=>$this->paginationLimitsArray,
+            'finalColumns' => $this->finalColumns,
+            'paginationLimitsArray' => $this->paginationLimitsArray,
         ]);
     }
 

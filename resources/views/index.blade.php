@@ -105,7 +105,7 @@
 </div>
 <!-- end row -->
 
-        <x-tables.table paginationLimits="1,2,3,4,5" columnsLabels="id,Никнейм,Телефон,Имя,Email,Пароль,Дата создания,Дата обновления" dbTableName="users" tableName="Полная инфа о юзерах" hiddenColumns=""/>
+        <x-tables.table paginationLimits="5,10,20" currentPageLimit="5" currentPage="2" columnsLabels="id,Никнейм,Телефон,Имя,Email,Пароль,Дата создания,Дата обновления" dbTableName="users" tableName="Полная инфа о юзерах" hiddenColumns=""/>
 @endsection
 @section('script')
        <!-- apexcharts -->
